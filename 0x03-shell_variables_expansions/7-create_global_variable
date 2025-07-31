@@ -1,3 +1,3 @@
 #!/bin/bash
 export BEST="School"
-echo "BEST=$BEST"
+echo -e "BEST=$BEST\nBEST=$BEST"
