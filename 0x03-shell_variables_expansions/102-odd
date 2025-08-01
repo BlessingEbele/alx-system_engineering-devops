@@ -1,4 +1,2 @@
 #!/bin/bash
-paste - - | cut -f1
-
-
+paste - - < /dev/stdin | cut -f1
