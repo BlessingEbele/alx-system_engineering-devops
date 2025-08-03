@@ -1,2 +1,2 @@
 #!/bin/bash
-echo $(( $(echo "$WATER" | tr 'ewatr' 01234 | awk '{n=0; for(i=1;i<=length;i++) n=n*5+substr($0,i,1); print n}') + $(echo "$STIR" | tr 'ti.r' 0123 | awk '{n=0; for(i=1;i<=length;i++) n=n*4+substr($0,i,1); print n}') )) | awk '{n=$1; o=""; while(n){o=substr("shtbeolhc",n%9+1,1) o; n=int(n/9);} print o}'
+echo $(( $(echo "$WATER" | tr 'ewatr' 01234 | awk '{n=0; for(i=1;i<=length;i++) n=n*5+substr($0,i,1); print n}') + $(echo "$STIR" | tr 'ti.r' 0123 | awk '{n=0; for(i=1;i<=length;i++) n=n*4+substr($0,i,1); print n}') )) | awk '{n=$1; s=""; while(n){s=substr("shtbeolhc",n%9+1,1) s; n=int(n/9);} if(s=="") print "s"; else print s}'
