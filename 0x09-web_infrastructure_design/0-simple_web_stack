@@ -1,0 +1,32 @@
+A user types www.foobar.com into their browser.  
+The browser performs a DNS lookup to resolve www.foobar.com to the server's public IP address (8.8.8.8) using the DNS record (A record).  
+
+The request reaches the server via the internet using the HTTP/HTTPS protocol.  
+The server is a physical or virtual machine that hosts the website.  
+
+The web server (Nginx) receives the request and serves static files directly (e.g., HTML, CSS, JS).  
+For dynamic content, the web server forwards the request to the application server.  
+
+The application server processes the request using the application codebase (business logic).  
+If data is required, the application server queries the MySQL database.  
+
+The database stores and retrieves structured data for the application.  
+The response flows back from the database → application server → web server → user’s browser.  
+
+----------------------------------------------------------------------
+Infrastructure Components:
+- Server: Physical or virtual machine hosting all services.
+- Domain name: foobar.com (with a www subdomain) maps to server IP 8.8.8.8.
+- DNS record: www is an A record mapping domain to IPv4 address.
+- Web server: Nginx, handles HTTP requests and serves static content.
+- Application server: Runs the application code and processes business logic.
+- Application files: The codebase for the website.
+- Database: MySQL stores application data.
+- Communication: Uses HTTP/HTTPS over TCP/IP between client and server.
+
+----------------------------------------------------------------------
+Issues with this infrastructure:
+1. SPOF (Single Point of Failure) — if the server goes down, the website is inaccessible.
+2. Downtime during maintenance — restarting Nginx or deploying updates interrupts service.
+3. No scalability — unable to handle high traffic spikes, as only one server handles all requests.
+
