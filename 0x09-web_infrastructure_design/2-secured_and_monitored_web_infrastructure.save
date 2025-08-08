@@ -1,0 +1,91 @@
+# 2. Secured and Monitored Web Infrastructure
+
+## Overview
+This design represents a **three-server web infrastructure** for `www.foobar.com`, with a focus on **security**, **encrypted traffic**, and **monitoring**. It builds on the distributed infrastructure by adding firewalls, HTTPS encryption, and monitoring agents.
+
+---
+
+## Whiteboard Diagram
+![Secured and Monitored Web Infrastructure](2-secured_and_monitored_web_infrastructure.png)
+
+---
+
+## Infrastructure Components
+
+### 1. Load Balancer (HAProxy)
+- Distributes incoming traffic across the application servers.
+- Configured with **round-robin** or **least-connections** algorithm.
+- SSL termination enabled to handle HTTPS requests.
+
+### 2. Application Servers (App-01, App-02)
+- Each runs **Nginx** as the web server and an application server to process requests.
+- Serve dynamic and static content.
+- Communicate with the database for data retrieval.
+
+### 3. Database (MySQL Primary-Replica)
+- **Primary node** handles writes.
+- **Replica node** handles read operations, improving performance.
+- Replication ensures data redundancy.
+
+---
+
+## Additional Components Added
+
+### Firewalls (3 total)
+- **Why added:** Protect each server (Load Balancer, App servers, Database) from unauthorized access.
+- **Function:** Only allow traffic on necessary ports (e.g., 80/443 for web, 3306 for MySQL internal connections).
+- **Benefit:** Reduces attack surface and mitigates risks from malicious traffic.
+
+### SSL Certificate (HTTPS)
+- **Why added:** Encrypts communication between the client and server.
+- **Function:** Prevents man-in-the-middle attacks by securing data in transit.
+- **Benefit:** Improves trust with users, boosts SEO, and meets security compliance requirements.
+
+### Monitoring Clients (3 total)
+- Installed on Load Balancer, App servers, and Database.
+- **Why added:** Continuously collects metrics for uptime, performance, and anomalies.
+- **Data Collector Example:** Sumologic, Datadog, or Prometheus agents.
+- **Benefit:** Early detection of failures or performance bottlenecks.
+
+---
+
+## Monitoring Details
+- **Purpose:** Monitor availability, performance (e.g., QPS - queries per second), error rates, and resource utilization.
+- **Data Collection:** Agents gather logs, metrics, and traces from each server and send them to the central monitoring system.
+- **To monitor QPS:** Configure your monitoring tool to track Nginx logs or database query logs and visualize the data on a dashboard---
+
+## Security Measures
+- **Firewalls:** Block unwanted inbound and outbound traffic.
+- **HTTPS:** Encrypts all client-server communication.
+- **Internal-only Database:** Database is only accessible from within the private network.
+
+
+## Issues with This Infrastructure
+1. **SSL Termination at the Load Balancer**
+   - Encrypting traffic only between the client and load balancer; internal traffic between load balancer and app servers is unencrypted.
+   - **Risk:** Internal network compromise can expose sensitive data.
+
+2. **Single MySQL Primary Node**
+   - If the primary node fails, no new writes can be performed until a failover occurs.
+   - **Risk:** Downtime for write operations.
+
+3. **Identical Components on All Servers**
+   - Running all services on the same server type can make it harder to isolate performance issues or scale individual components independently.
+
+
+## Domain Name and DNS
+- **Domain Name:** `foobar.com` with a `www` subdomain record.
+- **DNS Record Type:** `A` record pointing to the public IP of the Load Balancer.
+- **Function:** Resolves `www.foobar.com` to the load balancer’s IP.
+
+
+## Communication Flow
+1. User enters `https://www.foobar.com` in a browser.
+2. DNS resolves `www.foobar.com` to the Load Balancer’s IP.
+3. Load Balancer accepts HTTPS request, terminates SSL, and forwards traffic to one of the application servers.
+4. Application server processes the request:
+   - If data is needed, it queries the MySQL database.
+   - Primary node handles writes; Replica handles reads.
+5. Response is sent back to the Load Balancer, then to the user over HTTPS.
+
+

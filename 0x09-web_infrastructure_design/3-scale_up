@@ -1,0 +1,68 @@
+Scale Up – Advanced Web Infrastructure
+Whiteboard Design
+The infrastructure has been scaled to improve performance, redundancy, and fault tolerance. Components are separated into their own dedicated servers and the load balancers are configured in a clustered setup.
+
+Infrastructure Overview
+Components:
+
+4 Servers Total
+
+Server 1: Load Balancer #1 (HAProxy)
+
+Server 2: Load Balancer #2 (HAProxy, cluster with LB#1)
+
+Server 3: Web Server (Nginx)
+
+Server 4: Application Server
+
+Database Server(s): MySQL Primary and Replica (optional for read scaling)
+
+Additional Elements Added in This Setup:
+
+Second Load Balancer: Provides high availability for load balancing to avoid SPOF.
+
+Split Components:
+
+Web server runs on its own server (handles static content, forwards dynamic requests to application server).
+
+Application server runs separately (executes backend application logic).
+
+Database runs on its own server for better performance and isolation.
+
+Flow Explanation
+User Request → DNS resolves www.foobar.com to the public IP of one of the clustered load balancers.
+
+HAProxy Cluster: If Load Balancer #1 is down, Load Balancer #2 takes over automatically.
+
+Load Balancer uses a distribution algorithm (e.g., Round Robin) to forward requests to the Web Server.
+
+Web Server (Nginx) serves static content directly or forwards application requests to the Application Server.
+
+Application Server processes the request, interacts with the Database Server (MySQL), and sends data back through the web server to the client.
+
+Reasons for Each Additional Element
+Second Load Balancer: Ensures load balancing service is always available (removes single point of failure).
+
+Dedicated Web Server: Reduces resource competition between serving static content and processing backend logic.
+
+Dedicated Application Server: Improves performance and security by isolating backend execution from frontend serving.
+
+Dedicated Database Server: Optimizes database performance and enables independent scaling of database resources.
+
+Benefits
+High Availability: Load balancer cluster ensures minimal downtime.
+
+Improved Performance: Separation of roles reduces resource contention.
+
+Scalability: Each tier (web, application, database) can be scaled independently.
+
+Fault Tolerance: Failure in one tier does not directly bring down the others.
+
+Issues
+Complexity: More servers require more configuration and management.
+
+Cost: Higher infrastructure and maintenance costs.
+
+Database Write Bottleneck: If only one primary database exists for writes, it can become a bottleneck.
+
+Whiteboard Diagram:https://www.canva.com/design/DAGvhr4eydU/Z608zUsF4PXfssderKWauQ/edit
