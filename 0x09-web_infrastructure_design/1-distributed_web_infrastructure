@@ -1,0 +1,100 @@
+# 1 - Distributed Web Infrastructure
+
+![Whiteboard Diagram](https://raw.githubusercontent.com/<your-github-username>/alx-system_engineering-devops/main/0x09-web_infrastructure_design/A_distributed_web_infrastructure_diagram.png)
+
+----------------------------------------------------------------------
+Scenario (user journey)
+1. A user opens their browser and navigates to www.foobar.com.
+2. DNS resolves www.foobar.com to the public IP of the load balancer (or its virtual IP).
+3. The browser sends the HTTP/HTTPS request to the load balancer (HAProxy).
+4. HAProxy distributes the incoming request to one of the two application servers (App-01 or App-02) based on the configured algorithm.
+5. The selected application server (Nginx + app) serves static files directly and forwards dynamic requests to the application runtime.
+6. If the request requires data, the application server queries the database (MySQL primary).
+7. The database responds and the application server generates the response.
+8. The response flows back through HAProxy to the user’s browser.
+
+----------------------------------------------------------------------
+Infrastructure (what I added)
+- 3 servers total:
+  - **Server 1: Load Balancer** — HAProxy (front-facing; receives public traffic).
+  - **Server 2: Application Server A** — Nginx + application runtime + application files (code base).
+  - **Server 3: Application Server B + Database** — Nginx + application runtime + MySQL primary.
+- 1 web server: **Nginx** on each application server to handle HTTP, static files, and reverse-proxy to local app runtime.
+- 1 application server (x2): Two identical app servers running the same application files (codebase) for redundancy and load distribution.
+- 1 load-balancer: **HAProxy** distributing incoming requests to the two app servers.
+- 1 set of application files: The same codebase deployed to both application servers.
+- 1 database: **MySQL primary** (on Server 3) — central store for writes; replicas can be added for reads.
+
+----------------------------------------------------------------------
+Why each additional element is added
+- **Second application server (App-02):** Provides redundancy and enables horizontal scaling — if App-01 fails or is overloaded, App-02 continues to serve traffic.
+- **Load balancer (HAProxy):** Central entry point that accepts traffic and distributes it across app servers to balance load and provide failover.
+- **Nginx on each app server:** Efficiently serves static assets and acts as a local reverse proxy to the application runtime, improving performance and enabling easier app restarts without disrupting static content serving.
+- **Separate database server (or dedicated DB host):** Keeps data separated from application runtime; improves I/O isolation and simplifies scaling/backup.
+
+----------------------------------------------------------------------
+Load balancer algorithm & how it works
+- **Chosen algorithm:** _Least Connections_
+  - **How it works:** HAProxy forwards each incoming connection to the backend server that currently has the fewest active connections. This helps even out load when requests have uneven durations.
+  - **Why chosen:** Works well for applications where request durations vary — prevents a single busy server from receiving more new connections while still busy.
+
+----------------------------------------------------------------------
+Active-Active vs Active-Passive (load balancer context)
+- **Active-Active:**
+  - Multiple load balancer instances actively accept and distribute traffic simultaneously.
+  - Often combined with a virtual IP (VIP) or DNS/load-balancer clustering.
+  - **Benefits:** No single LB downtime; better throughput; seamless failover.
+- **Active-Passive:**
+  - One LB is active and handles traffic; the other is on standby (passive) and only takes over if active fails.
+  - **Benefits:** Simpler to set up; passive instance stays in sync and takes over with minimal config.
+- **My setup (explanation):**
+  - The diagram shows a single HAProxy server for simplicity. For production, I would implement **Active-Active** for the HAProxy layer (two HAProxy instances behind a VIP or use keepalived) to avoid load-balancer SPOF.
+
+----------------------------------------------------------------------
+Primary-Replica (Master-Slave) MySQL cluster — how it works
+- **Replication model:** Asynchronous or semi-sync replication from Primary (Master) → Replica(s) (Slave).
+- **Primary (Master):** Accepts **writes** (INSERT/UPDATE/DELETE). Writes are recorded to the binary log and sent to replicas.
+- **Replica (Slave):** Receives the primary’s binlog events and applies them to maintain a copy of the data. Typically used for **read scaling** and backups.
+- **Failover:** If the primary fails, a replica can be promoted to primary (manual or automated failover). Promotion should be coordinated to avoid split-brain.
+- **How the application uses them:** Application writes go to the primary. Read traffic can be routed to replicas to reduce load on primary (read-write split).
+
+----------------------------------------------------------------------
+Difference between Primary node and Replica node for application
+- **Primary node:**
+  - Handles read and write queries.
+  - Has the latest authoritative data for writes.
+  - Single source of truth for changes.
+- **Replica node:**
+  - Typically used for read-only queries and backups.
+  - May lag slightly behind the primary (replication lag).
+  - Should not be used for writes unless promoted to primary.
+
+----------------------------------------------------------------------
+Where SPOF remain in this infrastructure
+- **Primary database:** If there is only one MySQL primary and no replica or automatic failover, the DB is a SPOF — database outage causes service failure for writes and possibly reads.
+- **Single HAProxy instance (if not clustered):** If only one LB is used, the LB becomes a SPOF.
+- **Shared storage or single region dependency:** If everything is in a single data center/region with no replication, that region becomes a SPOF.
+
+----------------------------------------------------------------------
+Security issues (in this diagram)
+- **No HTTPS configured:** Traffic between client and HAProxy / HAProxy and backend is unencrypted — risk of data interception. Must add TLS termination on HAProxy or use TLS end-to-end.
+- **No firewall rules shown:** Exposed services might be reachable from the internet. Should restrict ports (only allow 80/443 to LB, SSH to management IPs, DB port only accessible from app servers).
+- **No authentication or secret management:** DB credentials and other secrets must be stored securely (env vars + vault).
+- **No rate-limiting / WAF:** No protection against DDoS or application layer attacks.
+
+----------------------------------------------------------------------
+Monitoring & Observability
+- **Current design has none.** Missing:
+  - Metrics (CPU, memory, disk, network) collection (e.g., DataDog, Prometheus).
+  - Application performance monitoring (APM) for user-facing latency and errors (e.g., NewRelic).
+  - Uptime/health checks and alerting.
+- **Recommendation:** Add monitoring agents on all nodes, instrument the app for traces, setup alerts and dashboards.
+
+----------------------------------------------------------------------
+Improvements to make this production-ready (summary)
+- Add DB replicas and automated failover (or managed DB service).
+- Use at least 2 HAProxy instances with VIP/keepalived for Active-Active or Active-Passive failover.
+- Serve HTTPS (TLS termination) on HAProxy and/or end-to-end TLS to backends.
+- Harden network with firewall rules and security groups.
+- Deploy monitoring, logging, and health checks.
+- Automate deployments (CI/CD) and use rolling updates to avoid downtime.
