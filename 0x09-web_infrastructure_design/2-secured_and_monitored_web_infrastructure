@@ -4,7 +4,7 @@
 This design represents a **three-server web infrastructure** for `www.foobar.com`, with a focus on **security**, **encrypted traffic**, and **monitoring**. It builds on the distributed infrastructure by adding firewalls, HTTPS encryption, and monitoring agents.
 
 ## Whiteboard Diagram
-![Secured and Monitored Web Infrastructure](2-secured_and_monitored_web_infrastructure.png)
+!https://www.canva.com/design/DAGvhZcVye8/vIg63qiiO8XxjOx6u_D-qA/edit?utm_content=DAGvhZcVye8&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
 
 ## Infrastructure Components
 
